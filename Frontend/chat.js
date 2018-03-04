@@ -12,6 +12,7 @@ $(document).ready(function(){
   console.log("Start testing the cognito");
 
   var settings = {
+      "async": false,
       "crossDomain": true,
       "url": "https://chatbox-bifeitang.auth.us-east-2.amazoncognito.com/oauth2/token",
       "method": "POST",
@@ -169,10 +170,10 @@ $(document).ready(function(){
     },
 
     sendMessageToApi: function(message) {
-      var sdk = apigClientFactory.newClient({
-        accessKey: AWS.config.credentials.accessKeyId,
-        secretKey: AWS.config.credentials.secretAccessKey,
-        sessionToken: AWS.config.credentials.sessionToken
+      sdk = apigClientFactory.newClient({
+          accessKey: AWS.config.credentials.accessKeyId,
+          secretKey: AWS.config.credentials.secretAccessKey,
+          sessionToken: AWS.config.credentials.sessionToken
       }); 
       return sdk.chatbotPost({}, {
         messages: [{

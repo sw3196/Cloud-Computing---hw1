@@ -95,8 +95,6 @@ apigClientFactory.newClient = function (config) {
             queryParams: apiGateway.core.utils.parseParametersToObject(params, []),
             body: body
         };
-
-        console.log(chatbotPostRequest);
         
         
         return apiGatewayClient.makeRequest(chatbotPostRequest, authType, additionalParams, config.apiKey);

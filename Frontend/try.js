@@ -1,4 +1,10 @@
 $(document).ready(function(){
+
+  //Configure the AWS client with the Cognito role and a blank identity pool to get initial credentials
+
+  var id_token = "";
+
+
   var AWS = window.AWS;
   var parser = document.createElement('a');
   parser.href = window.location.href;
@@ -43,13 +49,13 @@ $(document).ready(function(){
     // Configure the credentials provider to use your identity pool
     var UserPoolId = 'us-east-2_igNLK5o4i';
     var loginKey = 'cognito-idp.' + 'us-east-2' + '.amazonaws.com/' + UserPoolId;
-    var abc = token_response.id_token;
+    id_token = token_response.id_token;
     console.log("start step1: confige credentials");
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
         IdentityPoolId: 'us-east-2:d949719f-fab0-4977-8942-e0531edac4c0',
         // IdentityId: identityId,
         Logins: {
-            'cognito-idp.us-east-2.amazonaws.com/us-east-2_igNLK5o4i': abc
+            'cognito-idp.us-east-2.amazonaws.com/us-east-2_igNLK5o4i': id_token
           }
     });
   }
@@ -84,11 +90,7 @@ $(document).ready(function(){
             accessKeyId: accessKeyId,
             secretAccessKey: secretAccessKey,
             sessionToken: sessionToken
-        })
-        sdk = apigClientFactory.newClient({
-          accessKey: AWS.config.credentials.accessKeyId,
-          secretKey: AWS.config.credentials.secretAccessKey
-        }); 
+        })  
         chat.init();
         console.log("accessKeyId: ", accessKeyId);
         console.log("secretAccessKey: ", secretAccessKey);
@@ -102,16 +104,8 @@ $(document).ready(function(){
 
   var chat = {
     messageToSend: '',
-    messageResponses: [
-      'Hello!',
-      'How are you?',
-      'Why did the web developer leave the restaurant? Because of the table layout.',
-      'How do you comfort a JavaScript bug? You console it.',
-      'An SQL query enters a bar, approaches two tables and asks: "May I join you?"',
-      'What is the most used language in programming? Profanity.',
-      'What is the object-oriented way to become wealthy? Inheritance.',
-      'An SEO expert walks into a bar, bars, pub, tavern, public house, Irish pub, drinks, beer, alcohol'
-    ],
+    messageResponses: '',
+    responseTime: '',
     init: function() {
       this.cacheDOM();
       this.bindEvents();
@@ -145,37 +139,43 @@ $(document).ready(function(){
       this.scrollToBottom();
       this.sendMessageToApi(this.messageToSend);
       console.log(this.messageToSend);
-      
-      if (this.messageToSend.trim() !== '') {
-        
-        this.$textarea.val('');
-        
-        // responses
-        var templateResponse = Handlebars.compile( $("#message-response-template").html());
-        var contextResponse = { 
-          response: this.getRandomItem(this.messageResponses),
-          time: this.getCurrentTime()
-        };
-        
-        setTimeout(function() {
-          this.$chatHistoryList.append(templateResponse(contextResponse));
-          this.scrollToBottom();
-        }.bind(this), 1500);
-        
-      }
-      
     },
 
     sendMessageToApi: function(message) {
+      sdk = apigClientFactory.newClient(); 
+
+      var additionalParams = {
+        headers: {
+          Authorization: id_token
+        }
+      };
+
       sdk.chatbotPost({}, {
         messages: [{
           unstructed: {
             text: message
           }
         }]
-      }, {})
-      .then(function(result){
+      }, additionalParams)
+      .then((result) =>{
         console.log(result);
+
+        messageResponses = result.data.messages.body.text;
+        responseTime = result.data.messages.body.timestamp;
+        
+        if (this.messageToSend.trim() !== '') {
+          this.$textarea.val('');
+        }
+
+        var templateResponse = Handlebars.compile( $("#message-response-template").html());
+        var contextResponse = { 
+          response: messageResponses,
+          time: responseTime
+        };
+        
+        this.$chatHistoryList.append(templateResponse(contextResponse));
+        this.scrollToBottom();
+
       })
       .catch(function(error){
         console.log(error);

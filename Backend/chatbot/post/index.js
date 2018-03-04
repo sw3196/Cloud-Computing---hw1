@@ -1,3 +1,5 @@
+'use strict';
+
 var AWS = require("aws-sdk");
 var http = require('http');
 var util = require('util');
@@ -8,15 +10,16 @@ var genericResponse = "I am listening.";
 
 exports.handler = (event, context, callback) => {
     console.log('Start chatting');
+    console.log("request: " + JSON.stringify(event));
     
     let messages = null;
     
     try {
         if ('messages' in event) {
-            console.log(event.message);
-            messages = event.message;
+            console.log("receive message: ", event.messages);
+            messages = event.messages;
         } else {
-            console.log(event.message);
+            console.log(event.messages);
             throw new Error('bad request: missing messages key');
         }
         
@@ -31,6 +34,7 @@ exports.handler = (event, context, callback) => {
         callback(null, {
             messages: responseMessage
         });
+        context.succeed(responseMessage);
     } catch (error) {
         console.log(error);
         callback(error);
@@ -39,11 +43,12 @@ exports.handler = (event, context, callback) => {
 
 const buildUnstructuredMessage = function(text) {
   return {
-    statusCode : '200',
-    type: 'unstructured',
-    unstructured: {
+    statusCode : 200,
+    headers: {"Access-Control-Allow-Origin" : "*"},
+    body: {
       text: text,
       timestamp: new Date().toISOString()
     }
+    
   }
 };
